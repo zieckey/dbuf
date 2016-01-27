@@ -9,9 +9,17 @@ import (
 	"sync/atomic"
 )
 
+// DoubleBufferingTarget is the interface that wraps the basic operations
+// on a resource.
+//
+// Initialize does some initialization operations on the resource.
+// When Initialize encounters an error implementations must return false.
+//
+// Close does some resource recycling works which cannot be done
+// by GC of Golang.
 type DoubleBufferingTarget interface {
-	Initialize(conf string) bool // 初始化，继承类可以在此做一些初始化的工作
-	Close() // 继承类如果在Initialize函数中申请了一些资源，可以在这里将这些资源进行回收
+	Initialize(conf string) bool
+	Close()
 }
 
 type DoubleBufferingTargetCreator func() DoubleBufferingTarget
@@ -63,17 +71,17 @@ func (d *DoubleBuffering) reload(conf string) bool {
 	return true
 }
 
-// ReloadTimestamp return the latest timestamp when the DoubleBuffering reloaded at the last time
+// ReloadTimestamp returns the latest timestamp when the DoubleBuffering reloaded at the last time
 func (d *DoubleBuffering) ReloadTimestamp() int64 {
 	return d.reloadTimestamp
 }
 
-// LatestConfMD5 return the latest config's md5
+// LatestConfMD5 returns the latest config's md5
 func (d *DoubleBuffering) LatestConfMD5() string {
 	return d.md5h
 }
 
-// Get return the target this DoubleBuffering manipulated.
+// Get returns the target this DoubleBuffering manipulated.
 // You should call DoubleBufferingTargetRef.Release() function after you have used it.
 func (d *DoubleBuffering) Get() DoubleBufferingTargetRef {
 	d.mutex.Lock()
@@ -82,12 +90,14 @@ func (d *DoubleBuffering) Get() DoubleBufferingTargetRef {
 	return d.refTarget
 }
 
+// Release decrease one reference count.
 func (d DoubleBufferingTargetRef) Release() {
 	if d.ref != nil && atomic.AddInt32(d.ref, -1) == 0 {
 		d.Target.Close()
 	}
 }
 
+// Ref returns the reference count of the resource.
 func (d DoubleBufferingTargetRef) Ref() int32 {
 	if d.ref != nil {
 		return *d.ref
