@@ -14,8 +14,7 @@ import (
 )
 
 
-////////////////////////
-// Dict 实现了 unis.DoubleBufferingTarget 接口
+// Dict implement the interface of dbuf.DoubleBufferingTarget
 type Dict struct {
 	d string
 	//业务自己的其他更复杂的数据结构
@@ -29,10 +28,6 @@ func newDict() dbuf.DoubleBufferingTarget {
 var initializedCount int32
 var closedCount int32
 
-/*
-请求： curl http://localhost:9360/dict
-Reload指令：curl "http://localhost:9360/admin/reload?name=mydict&path=xxx2342c"
- */
 func (d *Dict) Initialize(conf string) bool {
 	// 这个conf一般情况下是一个配置文件的路径
 	// 这里我们简单的认为它只是一段数据
@@ -49,8 +44,6 @@ func (d *Dict) Close() {
 	_ = c
 	//fmt.Printf("Dict.Close() called, count=%d\n", c)
 }
-
-
 
 func TestDoubleBuffering(t *testing.T) {
 	m := dbuf.NewDoubleBufferingManager()

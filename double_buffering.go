@@ -125,7 +125,6 @@ func (m *DoubleBufferingManager) Get(name string) *DoubleBuffering {
 		return t
 	}
 
-	//panic("cannot find this kind of DoubleBuffering")
 	return nil
 }
 
