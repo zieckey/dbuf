@@ -48,7 +48,8 @@ ERROR
 Then we added `123` to the black-id-list.
 Now we have updated the black-id-list file and need it to be loaded into the service process.
 The simplest way is to stop the process and then start the process again.
-But during the continuous running period of a network server, this method will mistake some requests. It is harm to the client users.
+But during the continuous running period of a network server, this method will lose some requests during the stop-and-start period. 
+It is very harmful to the client users.
 
 So we use the double-buffering technology provided by this library.
 What we need to do is only to send a administration request to have it enabled. Like this:
