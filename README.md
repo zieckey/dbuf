@@ -1,7 +1,7 @@
 # go double buffering
 
 A simple library to manage resources which can be upgraded gracefully.
-This blog written in Chinese the usage of this library : http://blog.codeg.cn/2016/01/27/double-buffering/
+This blog written in Chinese shows the usage of this library : http://blog.codeg.cn/2016/01/27/double-buffering/
 
 
 During the continuous running period of a network server, there are some resources need to be updated on real-time.
@@ -24,8 +24,8 @@ Using the following steps to run this example:
 ### Step 1
 
 ```shell
-$ git clone https://github.com/zieckey/go-doublebuffering
-$ cd go-doublebuffering/example
+$ git clone https://github.com/zieckey/dbuf
+$ cd dbuf/example
 $ go build
 $ ./example ./black_id.txt
 ```
@@ -61,4 +61,4 @@ $ curl "http://localhost:8091/q?id=123&query=jane"
 ERROR
 ```
 
-`id=123` is rejected now. It works.
+`id=123` is rejected now. It works. Simple reload the dict file successfully.

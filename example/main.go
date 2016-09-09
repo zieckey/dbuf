@@ -10,21 +10,21 @@ import (
 	"strings"
 	"io"
 
-	"github.com/zieckey/go-doublebuffering"
+	"github.com/zieckey/dbuf"
 )
 
 type BlackIDDict struct {
 	blackIDs map[string]int
 }
 
-func NewBlackIDDict() dbuf.DoubleBufferingTarget {
+func NewBlackIDDict() dbuf.Target {
 	d := &BlackIDDict{
 		blackIDs: make(map[string]int),
 	}
 	return d
 }
 
-var dbm *dbuf.DoubleBufferingManager
+var dbm *dbuf.Manager
 
 func (d *BlackIDDict) Initialize(conf string) bool {
 	filepath := conf
@@ -113,12 +113,19 @@ func Reload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// The detail usage is here : http://blog.codeg.cn/2016/01/27/double-buffering/
+//
+// $ curl "http://127.0.0.1:8091/q?id=475e5a499587a52ea14a23031ecce7c9&query=jane"
+// ERROR
+//
+// $ curl "http://127.0.0.1:8091/q?id=12312&query=jane"
+// hello, 12312
 func main() {
 	if len(os.Args) != 2 {
 		panic("Not specify black_id.txt")
 	}
 
-	dbm = dbuf.NewDoubleBufferingManager()
+	dbm = dbuf.NewManager()
 	rc := dbm.Add("black_id", os.Args[1], NewBlackIDDict)
 	if rc == false {
 		panic("black_id initialize failed")

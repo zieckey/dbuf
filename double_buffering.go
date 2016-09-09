@@ -17,30 +17,30 @@ import (
 //
 // Close does some resource recycling works which cannot be done
 // by GC of Golang.
-type DoubleBufferingTarget interface {
+type Target interface {
 	Initialize(conf string) bool
 	Close()
 }
 
-type DoubleBufferingTargetCreator func() DoubleBufferingTarget
+type TargetCreator func() Target
 
-type DoubleBufferingTargetRef struct {
-	Target DoubleBufferingTarget
+type TargetRef struct {
+	Target Target
 	ref    *int32
 }
 
 type DoubleBuffering struct {
-	creator         DoubleBufferingTargetCreator
+	creator         TargetCreator
 
 	mutex           sync.Mutex
-	refTarget       DoubleBufferingTargetRef
+	refTarget       TargetRef
 
 	reloadTimestamp int64
 	md5h            string
 }
 
 
-func newDoubleBuffering(f DoubleBufferingTargetCreator) *DoubleBuffering {
+func newDoubleBuffering(f TargetCreator) *DoubleBuffering {
 	d := new(DoubleBuffering)
 	d.creator = f
 	d.reloadTimestamp = 0
@@ -82,8 +82,8 @@ func (d *DoubleBuffering) LatestConfMD5() string {
 }
 
 // Get returns the target this DoubleBuffering manipulated.
-// You should call DoubleBufferingTargetRef.Release() function after you have used it.
-func (d *DoubleBuffering) Get() DoubleBufferingTargetRef {
+// You should call TargetRef.Release() function after you have used it.
+func (d *DoubleBuffering) Get() TargetRef {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 	atomic.AddInt32(d.refTarget.ref, 1)
@@ -91,14 +91,14 @@ func (d *DoubleBuffering) Get() DoubleBufferingTargetRef {
 }
 
 // Release decrease one reference count.
-func (d DoubleBufferingTargetRef) Release() {
+func (d TargetRef) Release() {
 	if d.ref != nil && atomic.AddInt32(d.ref, -1) == 0 {
 		d.Target.Close()
 	}
 }
 
 // Ref returns the reference count of the resource.
-func (d DoubleBufferingTargetRef) Ref() int32 {
+func (d TargetRef) Ref() int32 {
 	if d.ref != nil {
 		return *d.ref
 	}
@@ -106,19 +106,19 @@ func (d DoubleBufferingTargetRef) Ref() int32 {
 	return 0
 }
 
-type DoubleBufferingMap map[string/*name*/]*DoubleBuffering
-type DoubleBufferingManager struct {
-	targets DoubleBufferingMap
-	mutex sync.Mutex
+type dbmap map[string/*name*/]*DoubleBuffering
+type Manager struct {
+	targets dbmap
+	mutex   sync.Mutex
 }
 
-func NewDoubleBufferingManager() *DoubleBufferingManager {
-	m := new(DoubleBufferingManager)
-	m.targets = make(DoubleBufferingMap)
+func NewManager() *Manager {
+	m := new(Manager)
+	m.targets = make(dbmap)
 	return m
 }
 
-func (m *DoubleBufferingManager) Add(name string, conf string, f DoubleBufferingTargetCreator) bool {
+func (m *Manager) Add(name string, conf string, f TargetCreator) bool {
 	d := newDoubleBuffering(f)
 	if d.reload(conf) {
 		m.targets[name] = d
@@ -128,7 +128,7 @@ func (m *DoubleBufferingManager) Add(name string, conf string, f DoubleBuffering
 	return false
 }
 
-func (m *DoubleBufferingManager) Get(name string) *DoubleBuffering {
+func (m *Manager) Get(name string) *DoubleBuffering {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	if t, ok := m.targets[name]; ok {
@@ -138,7 +138,7 @@ func (m *DoubleBufferingManager) Get(name string) *DoubleBuffering {
 	return nil
 }
 
-func (m *DoubleBufferingManager) Reload(name, conf string) bool {
+func (m *Manager) Reload(name, conf string) bool {
 	d := m.Get(name)
 	if d == nil {
 		return false
