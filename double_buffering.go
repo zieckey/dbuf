@@ -39,7 +39,6 @@ type DoubleBuffering struct {
 	md5h            string
 }
 
-
 func newDoubleBuffering(f TargetCreator) *DoubleBuffering {
 	d := new(DoubleBuffering)
 	d.creator = f
@@ -47,17 +46,17 @@ func newDoubleBuffering(f TargetCreator) *DoubleBuffering {
 	return d
 }
 
-func (d *DoubleBuffering) reload(conf string) bool {
+func (d *DoubleBuffering) reload(conf string) error {
 	t := d.creator()
 	if t.Initialize(conf) == false {
-		return false
+		return fmt.Errorf("t.Initialize(%v) failed", conf)
 	}
 
 	content, err := ioutil.ReadFile(conf)
 	if err != nil {
 		content = []byte(conf)
 	}
-	d.md5h = fmt.Sprint("%x", md5.Sum(content))
+	d.md5h = fmt.Sprintf("%x", md5.Sum(content))
 	d.reloadTimestamp = time.Now().Unix()
 
 	d.mutex.Lock()
@@ -66,9 +65,9 @@ func (d *DoubleBuffering) reload(conf string) bool {
 
 	d.refTarget.Target = t
 	d.refTarget.ref = new(int32)
-	*d.refTarget.ref = 1 // 初始设置为1，由DoubleBuffering代为管理
+	*d.refTarget.ref = 1 // 初始设置为1，表明该对象由DoubleBuffering已经代为管理起来了
 
-	return true
+	return nil
 }
 
 // ReloadTimestamp returns the latest timestamp when the DoubleBuffering reloaded at the last time
@@ -97,8 +96,8 @@ func (d TargetRef) Release() {
 	}
 }
 
-// Ref returns the reference count of the resource.
-func (d TargetRef) Ref() int32 {
+// GetRef returns the reference count of the resource.
+func (d TargetRef) GetRef() int32 {
 	if d.ref != nil {
 		return *d.ref
 	}
@@ -118,14 +117,14 @@ func NewManager() *Manager {
 	return m
 }
 
-func (m *Manager) Add(name string, conf string, f TargetCreator) bool {
+func (m *Manager) Add(name string, conf string, f TargetCreator) (err error) {
 	d := newDoubleBuffering(f)
-	if d.reload(conf) {
+	err = d.reload(conf)
+	if err == nil {
 		m.targets[name] = d
-		return true
 	}
 
-	return false
+	return err
 }
 
 func (m *Manager) Get(name string) *DoubleBuffering {
@@ -138,10 +137,10 @@ func (m *Manager) Get(name string) *DoubleBuffering {
 	return nil
 }
 
-func (m *Manager) Reload(name, conf string) bool {
+func (m *Manager) Reload(name, conf string) error {
 	d := m.Get(name)
 	if d == nil {
-		return false
+		return fmt.Errorf("Cannot find the Target by name [%v]", name)
 	}
 
 	return d.reload(conf)

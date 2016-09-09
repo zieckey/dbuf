@@ -102,11 +102,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Reload(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	name := r.FormValue("name")
-	path := r.FormValue("path")
+    name := r.URL.Query().Get("name")
+    path := r.URL.Query().Get("path")
 
-	if dbm.Reload(name, path) {
+	if dbm.Reload(name, path) == nil {
 		w.Write([]byte("OK"))
 	} else {
 		w.Write([]byte("FAILED"))
@@ -127,7 +126,7 @@ func main() {
 
 	dbm = dbuf.NewManager()
 	rc := dbm.Add("black_id", os.Args[1], NewBlackIDDict)
-	if rc == false {
+	if rc != nil {
 		panic("black_id initialize failed")
 	}
 
